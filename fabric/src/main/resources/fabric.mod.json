@@ -12,7 +12,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "dev.darcosse.fabric.justenoughcobblemon.FabricModExample"
+      "dev.darcosse.fabric.justenoughcobblemon.JustEnoughCobblemon"
     ],
     "jei_mod_plugin": [
       "dev.darcosse.fabric.justenoughcobblemon.JustEnoughCobblemonFabricPlugin"

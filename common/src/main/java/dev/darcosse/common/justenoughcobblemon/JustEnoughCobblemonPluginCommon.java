@@ -1,15 +1,12 @@
 package dev.darcosse.common.justenoughcobblemon;
 
-import com.cobblemon.mod.common.api.drop.ItemDropEntry;
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.cobblemon.mod.common.pokemon.Species;
 import dev.darcosse.common.justenoughcobblemon.jei.PokemonDropCategory;
 import dev.darcosse.common.justenoughcobblemon.recipes.PokemonDropRecipe;
 import mezz.jei.api.IModPlugin;
-import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
@@ -18,7 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@JeiPlugin
 public abstract class JustEnoughCobblemonPluginCommon implements IModPlugin {
 
     @Override
