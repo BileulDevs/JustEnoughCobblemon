@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "justenoughcobblemon",
+  "version": "${version}",
+  "name": "JustEnoughCobblemon",
+  "description": "A Cobblemon Addon to see Pokemon drops and where they spawn",
+  "authors": [
+    "Darcosse"
+  ],
+  "license": "MIT License",
+  "icon": "assets/example/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.darcosse.fabric.justenoughcobblemon.FabricModExample"
+    ],
+    "jei_mod_plugin": [
+      "dev.darcosse.fabric.justenoughcobblemon.JustEnoughCobblemonFabricPlugin"
+    ]
+  },
+  "depends": {
+    "minecraft": "1.21.1",
+    "cobblemon": ">=1.7.1 <1.8.0"
+  }
+}
