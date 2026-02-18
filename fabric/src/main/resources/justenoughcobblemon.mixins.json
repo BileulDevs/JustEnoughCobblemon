@@ -4,6 +4,8 @@
   "package": "dev.darcosse.common.justenoughcobblemon.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "PokedexGUIMixin",
+    "ScreenAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
