@@ -7,11 +7,13 @@ import com.cobblemon.mod.common.api.spawning.TimeRange
 import com.cobblemon.mod.common.api.spawning.detail.PokemonSpawnDetail
 import com.cobblemon.mod.common.registry.BiomeIdentifierCondition
 import com.cobblemon.mod.common.registry.BiomeTagCondition
+import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.level.biome.Biome
 
 /**
  * Data class representing detailed spawn information for a Pokémon.
+ * Includes support for translatable UI components and regional forms.
  *
  * @author Darcosse
  * @version 1.0
@@ -21,6 +23,7 @@ data class SpawnInfo(
     val bucket: String,
     val weight: Float,
     val levelRange: IntRange?,
+    val form: String?,
     val biomes: List<String>,
     val anticonditionBiomes: List<String>,
     val structures: List<String>,
@@ -41,67 +44,77 @@ data class SpawnInfo(
     val labels: List<String>
 ) {
     /**
-     * Converts spawn data into a list of formatted strings for display.
+     * Converts spawn data into a list of formatted and translated strings for display.
      */
     fun toDisplayLines(): List<String> {
         val lines = mutableListOf<String>()
 
-        lines.add("§l§6Bucket:§r $bucket")
-        lines.add("§l§6Weight:§r ${"%.2f".format(weight)}")
+        lines.add("§l§6${tr("bucket")}:§r $bucket")
+        lines.add("§l§6${tr("weight")}:§r ${"%.2f".format(weight)}")
 
         levelRange?.let {
-            lines.add("§l§6Level:§r ${it.first} - ${it.last}")
+            lines.add("§l§6${tr("level")}:§r ${it.first} - ${it.last}")
+        }
+
+        form?.let {
+            lines.add("§l§6${tr("form")}:§r $it")
         }
 
         if (biomes.isNotEmpty()) {
-            lines.add("§l§6Biomes:§r")
+            lines.add("§l§6${tr("biomes")}:§r")
             biomes.forEach { lines.add("  §7$it") }
         }
 
         if (anticonditionBiomes.isNotEmpty()) {
-            lines.add("§l§6Excluded Biomes:§r")
+            lines.add("§l§6${tr("excluded_biomes")}:§r")
             anticonditionBiomes.forEach { lines.add("  §7$it") }
         }
 
         if (structures.isNotEmpty()) {
-            lines.add("§l§6Structures:§r")
+            lines.add("§l§6${tr("structures")}:§r")
             structures.forEach { lines.add("  §7$it") }
         }
 
         if (dimensions.isNotEmpty()) {
-            lines.add("§l§6Dimensions:§r")
+            lines.add("§l§6${tr("dimensions")}:§r")
             dimensions.forEach { lines.add("  §7$it") }
         }
 
         if (minY != null || maxY != null) {
-            lines.add("§l§6Y Range:§r ${minY ?: "min"} - ${maxY ?: "max"}")
+            lines.add("§l§6${tr("y_range")}:§r ${minY ?: "min"} - ${maxY ?: "max"}")
         }
 
         if (minLight != null || maxLight != null) {
-            lines.add("§l§6Light:§r ${minLight ?: "0"} - ${maxLight ?: "15"}")
+            lines.add("§l§6${tr("light")}:§r ${minLight ?: "0"} - ${maxLight ?: "15"}")
         }
 
         if (minSkyLight != null || maxSkyLight != null) {
-            lines.add("§l§6Sky Light:§r ${minSkyLight ?: "0"} - ${maxSkyLight ?: "15"}")
+            lines.add("§l§6${tr("sky_light")}:§r ${minSkyLight ?: "0"} - ${maxSkyLight ?: "15"}")
         }
 
-        timeRange?.let { lines.add("§l§6Time:§r $it") }
-        moonPhase?.let { lines.add("§l§6Moon Phase:§r $it") }
-        canSeeSky?.let { lines.add("§l§6Sees Sky:§r $it") }
-        isRaining?.let { lines.add("§l§6Raining:§r $it") }
-        isThundering?.let { lines.add("§l§6Thundering:§r $it") }
-        isSlimeChunk?.let { if (it) lines.add("§l§6Slime Chunk:§r true") }
+        timeRange?.let { lines.add("§l§6${tr("time")}:§r $it") }
+        moonPhase?.let { lines.add("§l§6${tr("moon_phase")}:§r $it") }
+        canSeeSky?.let { lines.add("§l§6${tr("sees_sky")}:§r $it") }
+        isRaining?.let { lines.add("§l§6${tr("raining")}:§r $it") }
+        isThundering?.let { lines.add("§l§6${tr("thundering")}:§r $it") }
+        isSlimeChunk?.let { if (it) lines.add("§l§6${tr("slime_chunk")}:§r true") }
 
         if (markers.isNotEmpty()) {
-            lines.add("§l§6Markers:§r ${markers.joinToString(", ")}")
+            lines.add("§l§6${tr("markers")}:§r ${markers.joinToString(", ")}")
         }
 
         if (labels.isNotEmpty()) {
-            lines.add("§l§6Labels:§r ${labels.joinToString(", ")}")
+            lines.add("§l§6${tr("labels")}:§r ${labels.joinToString(", ")}")
         }
 
         return lines
     }
+
+    /**
+     * Helper function to translate spawn UI keys.
+     */
+    private fun tr(key: String): String =
+        Component.translatable("justenoughcobblemon.ui.spawn.$key").string
 }
 
 /**
@@ -127,7 +140,8 @@ object SpawnDataExtractor {
     }
 
     /**
-     * Extracts raw PokemonSpawnDetail into a structured SpawnInfo object.
+     * Extracts raw PokemonSpawnDetail into a structured SpawnInfo object,
+     * including regional aspect detection.
      */
     private fun extractInfo(detail: PokemonSpawnDetail): SpawnInfo {
         val conditions = detail.conditions
@@ -137,6 +151,9 @@ object SpawnDataExtractor {
             bucket = detail.bucket.name,
             weight = detail.weight,
             levelRange = detail.levelRange,
+            form = detail.pokemon.aspects
+                .firstOrNull { it.isNotBlank() }
+                ?.replaceFirstChar { it.uppercase() },
 
             biomes = conditions.flatMap { condition ->
                 condition.biomes?.map { formatBiomeCondition(it) } ?: emptyList()

@@ -2,15 +2,9 @@ package dev.darcosse.common.justenoughcobblemon.mixin;
 
 import com.cobblemon.mod.common.api.pokedex.entry.PokedexEntry;
 import com.cobblemon.mod.common.api.pokedex.entry.PokedexForm;
-import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
-import com.cobblemon.mod.common.api.spawning.CobblemonSpawnPools;
 import com.cobblemon.mod.common.client.gui.pokedex.PokedexGUI;
 import com.cobblemon.mod.common.client.gui.pokedex.ScaledButton;
 import com.cobblemon.mod.common.client.gui.pokedex.PokedexGUIConstants;
-import com.cobblemon.mod.common.api.spawning.CobblemonSpawnPools;
-import com.cobblemon.mod.common.api.spawning.detail.SpawnDetail;
-import com.cobblemon.mod.common.api.spawning.detail.PokemonSpawnDetail;
-import com.cobblemon.mod.common.pokemon.Species;
 import dev.darcosse.common.justenoughcobblemon.client.gui.PokespawnWidget;
 import dev.darcosse.common.justenoughcobblemon.util.SpawnDataExtractor;
 import dev.darcosse.common.justenoughcobblemon.util.SpawnInfo;
@@ -43,6 +37,7 @@ public class PokedexGUIMixin {
     @Shadow private PokedexEntry selectedEntry;
     @Shadow private PokedexForm selectedForm;
     @Shadow public boolean canSelectTab(int tabIndex) { return false; }
+    @Shadow public void setSelectedEntry(PokedexEntry newSelectedEntry) {}
 
     private int savedTabInfoIndex = -1;
 
@@ -112,7 +107,6 @@ public class PokedexGUIMixin {
     @Inject(method = "displaytabInfoElement", at = @At("HEAD"), cancellable = true)
     private void injectDisplayTab(int tabIndex, boolean update, CallbackInfo ci) {
         if (tabIndex != 5) {
-            // Si on quitte notre tab, retirer les boutons flèches
             if (tabInfoIndex == 5 && tabInfoElement instanceof PokespawnWidget) {
                 PokedexGUI self = (PokedexGUI)(Object)this;
                 ((ScreenAccessor)(Object)self).invokeRemoveWidget(((PokespawnWidget) tabInfoElement).getLeftButton());
@@ -136,7 +130,6 @@ public class PokedexGUIMixin {
         tabInfoIndex = 5;
         PokespawnWidget widget = new PokespawnWidget(x + 180, y + 135);
 
-        // Récupérer les spawns via le selectedEntry shadowé
         List<SpawnInfo> spawns = SpawnDataExtractor.INSTANCE.getSpawnsForSpecies(selectedEntry.getSpeciesId());
         widget.setSpawns(spawns);
 
@@ -149,6 +142,22 @@ public class PokedexGUIMixin {
         }
 
         ci.cancel();
+    }
+
+    /**
+     * Resets the tab selection to the default view (index 0) when a new Pokémon entry is selected
+     * while on the custom spawn tab. This ensures the UI doesn't break and cleans up custom buttons.
+     */
+    @Inject(method = "setSelectedEntry", at = @At("HEAD"))
+    private void onSetSelectedEntry(PokedexEntry newSelectedEntry, CallbackInfo ci) {
+        if (tabInfoIndex == 5) {
+            PokedexGUI self = (PokedexGUI)(Object)this;
+            if (tabInfoElement instanceof PokespawnWidget) {
+                ((ScreenAccessor)(Object)self).invokeRemoveWidget(((PokespawnWidget) tabInfoElement).getLeftButton());
+                ((ScreenAccessor)(Object)self).invokeRemoveWidget(((PokespawnWidget) tabInfoElement).getRightButton());
+            }
+            displayTabInject(0);
+        }
     }
 
     /**
