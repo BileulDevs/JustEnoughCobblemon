@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "justenoughcobblemon",
   "version": "${version}",
-  "name": "JustEnoughCobblemon",
+  "name": "Just Enough Cobblemon",
   "description": "A Cobblemon Addon to see Pokemon drops and where they spawn",
   "authors": [
     "Darcosse"
@@ -18,8 +18,15 @@
       "dev.darcosse.fabric.justenoughcobblemon.JustEnoughCobblemonFabricPlugin"
     ]
   },
+  "mixins": [
+    "justenoughcobblemon.mixins.json"
+  ],
   "depends": {
     "minecraft": "1.21.1",
     "cobblemon": ">=1.7.1 <1.8.0"
+  },
+  "suggests": {
+    "jei": "*",
+    "emi": "*"
   }
 }

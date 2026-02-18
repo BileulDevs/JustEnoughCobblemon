@@ -33,3 +33,10 @@ mandatory = true
 versionRange = "[1.7.1,)"
 ordering = "AFTER"
 side = "BOTH"
+
+[[dependencies.justenoughcobblemon]]
+modId = "jei"
+mandatory = false
+versionRange = "[19.0,)"
+ordering = "AFTER"
+side = "CLIENT"
