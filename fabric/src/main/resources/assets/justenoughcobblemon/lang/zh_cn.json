@@ -1,0 +1,23 @@
+{
+  "justenoughcobblemon.ui.spawn.title": "刷新点 %s/%s",
+  "justenoughcobblemon.ui.spawn.no_data": "无刷新数据。",
+  "justenoughcobblemon.ui.spawn.bucket": "类别",
+  "justenoughcobblemon.ui.spawn.weight": "权重",
+  "justenoughcobblemon.ui.spawn.level": "等级",
+  "justenoughcobblemon.ui.spawn.form": "形态",
+  "justenoughcobblemon.ui.spawn.biomes": "生物群系",
+  "justenoughcobblemon.ui.spawn.excluded_biomes": "排除的生物群系",
+  "justenoughcobblemon.ui.spawn.structures": "结构",
+  "justenoughcobblemon.ui.spawn.dimensions": "维度",
+  "justenoughcobblemon.ui.spawn.y_range": "Y范围",
+  "justenoughcobblemon.ui.spawn.light": "光照",
+  "justenoughcobblemon.ui.spawn.sky_light": "天空光照",
+  "justenoughcobblemon.ui.spawn.time": "时间",
+  "justenoughcobblemon.ui.spawn.moon_phase": "月相",
+  "justenoughcobblemon.ui.spawn.sees_sky": "可见天空",
+  "justenoughcobblemon.ui.spawn.raining": "下雨",
+  "justenoughcobblemon.ui.spawn.thundering": "雷暴",
+  "justenoughcobblemon.ui.spawn.slime_chunk": "史莱姆区块",
+  "justenoughcobblemon.ui.spawn.markers": "标记",
+  "justenoughcobblemon.ui.spawn.labels": "标签"
+}
