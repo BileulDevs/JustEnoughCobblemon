@@ -3,7 +3,8 @@ package dev.darcosse.common.justenoughcobblemon.mixin;
 import com.cobblemon.mod.common.client.gui.pokedex.PokedexGUI;
 import com.cobblemon.mod.common.client.gui.pokedex.ScaledButton;
 import com.cobblemon.mod.common.client.gui.pokedex.PokedexGUIConstants;
-import dev.darcosse.common.justenoughcobblemon.client.gui.MyCustomWidget;
+import dev.darcosse.common.justenoughcobblemon.client.gui.PokespawnWidget;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
@@ -13,23 +14,68 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.List;
 
+/**
+ * Mixin for the Pokédex GUI to inject custom tabs and handle rendering logic.
+ *
+ * @author Darcosse
+ * @version 1.0
+ * @since 2026
+ */
 @Mixin(value = PokedexGUI.class, remap = false)
 public class PokedexGUIMixin {
 
     @Shadow private List<ScaledButton> tabButtons;
     @Shadow public GuiEventListener tabInfoElement;
     @Shadow public int tabInfoIndex;
+    @Shadow private static ResourceLocation tabSelectArrow;
+    private int savedTabInfoIndex = -1;
 
+    /**
+     * Temporarily hides the original selection arrow before the main render call.
+     */
+    @Inject(method = "render", at = @At("HEAD"))
+    private void hideOriginalArrow(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+        savedTabInfoIndex = tabInfoIndex;
+        tabInfoIndex = -100;
+    }
+
+    /**
+     * Re-renders the selection arrow at the correct position, including support for custom tabs.
+     */
+    @Inject(method = "render", at = @At("TAIL"))
+    private void drawCorrectArrow(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+        tabInfoIndex = savedTabInfoIndex;
+        PokedexGUI self = (PokedexGUI)(Object)this;
+        int x = (self.width - PokedexGUIConstants.BASE_WIDTH) / 2;
+        int y = (self.height - PokedexGUIConstants.BASE_HEIGHT) / 2;
+
+        int newX = (int)(x + 191.5F + (22 * tabInfoIndex));
+        int newY = y + 177;
+        context.pose().pushPose();
+        context.pose().scale(0.5F, 0.5F, 1.0F);
+        context.blit(tabSelectArrow, newX * 2, newY * 2, 0, 0, 12, 6, 12, 6);
+        context.pose().popPose();
+    }
+
+    /**
+     * Injects the custom "Drops" tab into the Pokédex tab list and re-aligns existing buttons.
+     */
     @Inject(method = "setUpTabs", at = @At("TAIL"))
     private void injectMyTab(CallbackInfo ci) {
         PokedexGUI self = (PokedexGUI)(Object)this;
         int x = (self.width - PokedexGUIConstants.BASE_WIDTH) / 2;
         int y = (self.height - PokedexGUIConstants.BASE_HEIGHT) / 2;
 
+        for (int i = 0; i < tabButtons.size(); i++) {
+            float newX = x + 190.5F + (i * 22F);
+            tabButtons.get(i).setButtonX(newX);
+            tabButtons.get(i).setX((int) newX);
+        }
+
         ResourceLocation myIcon = ResourceLocation.fromNamespaceAndPath("cobblemon", "textures/gui/pokedex/tab_drops.png");
 
         ScaledButton myTab = new ScaledButton(
-                x + 197F + (5 * 25F),
+                x + 190.5F + (5 * 22F),  // même espacement 22F
                 y + 181.5F,
                 PokedexGUIConstants.TAB_ICON_SIZE,
                 PokedexGUIConstants.TAB_ICON_SIZE,
@@ -44,6 +90,9 @@ public class PokedexGUIMixin {
         ((ScreenAccessor)(Object)self).invokeAddRenderableWidget(myTab);
     }
 
+    /**
+     * Handles the display logic for the custom tab content when selected.
+     */
     @Inject(method = "displaytabInfoElement", at = @At("HEAD"), cancellable = true)
     private void injectDisplayTab(int tabIndex, boolean update, CallbackInfo ci) {
         if (tabIndex != 5) return;
@@ -62,21 +111,30 @@ public class PokedexGUIMixin {
         }
 
         tabInfoIndex = 5;
-        MyCustomWidget widget = new MyCustomWidget(x + 180, y + 135);
+        PokespawnWidget widget = new PokespawnWidget(x + 180, y + 135);
         tabInfoElement = widget;
         ((ScreenAccessor)(Object)self).invokeAddRenderableWidget(widget);
         ci.cancel();
     }
 
+    /**
+     * Prevents the original update logic from overwriting the custom tab state.
+     */
     @Inject(method = "updateTabInfoElement", at = @At("HEAD"), cancellable = true)
     private void injectUpdateTab(CallbackInfo ci) {
         if (tabInfoIndex == 5) ci.cancel();
     }
 
+    /**
+     * Checks if a specific tab index can be selected.
+     */
     private boolean canSelectTabInject(int tabIndex) {
         return tabIndex != tabInfoIndex;
     }
 
+    /**
+     * Triggers the Pokedex display element update for the injected tab.
+     */
     private void displayTabInject(int tabIndex) {
         ((PokedexGUI)(Object)this).displaytabInfoElement(tabIndex, true);
     }
