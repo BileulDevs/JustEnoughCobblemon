@@ -6,8 +6,8 @@ license = "MIT License"
 [[mods]]
 modId = "justenoughcobblemon"
 version = "${version}"
-displayName = "JustEnoughCobblemon"
-authors = "Me!"
+displayName = "Just Enough Cobblemon"
+authors = "Darcosse"
 description = '''
 A Cobblemon Addon to see Pokemon drops and where they spawn
 '''
@@ -40,3 +40,6 @@ mandatory = false
 versionRange = "[19.0,)"
 ordering = "AFTER"
 side = "CLIENT"
+
+[[mixins]]
+config = "justenoughcobblemon.mixins.json"

@@ -34,7 +34,7 @@ dependencies {
     neoForge("net.neoforged:neoforge:${property("neoforge_version")}")
 
     modImplementation("com.cobblemon:neoforge:${property("cobblemon_version")}") { isTransitive = false }
-    //Needed for cobblemon
+
     forgeRuntimeLibrary("thedarkcolour:kotlinforforge-neoforge:${property("kotlin_for_forge_version")}") {
         exclude("net.neoforged.fancymodloader", "loader")
     }
@@ -44,6 +44,8 @@ dependencies {
         isTransitive = false
     }
     shadowBundle(project(":common", configuration = "transformProductionFabric"))
+
+    annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
 
     modApi("mezz.jei:jei-1.21.1-neoforge:19.27.0.340")
 
