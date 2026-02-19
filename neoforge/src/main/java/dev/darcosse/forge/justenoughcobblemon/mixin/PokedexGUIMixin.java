@@ -1,4 +1,4 @@
-package dev.darcosse.common.justenoughcobblemon.mixin;
+package dev.darcosse.forge.justenoughcobblemon.mixin;
 
 import com.cobblemon.mod.common.api.pokedex.entry.PokedexEntry;
 import com.cobblemon.mod.common.api.pokedex.entry.PokedexForm;

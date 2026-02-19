@@ -1,9 +1,9 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "dev.darcosse.common.justenoughcobblemon.mixin",
-  "compatibilityLevel": "JAVA_17",
-  "mixins": [
+  "package": "dev.darcosse.forge.justenoughcobblemon.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
     "PokedexGUIMixin",
     "ScreenAccessor"
   ],
