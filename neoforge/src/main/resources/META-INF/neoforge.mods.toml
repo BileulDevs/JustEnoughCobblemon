@@ -39,7 +39,7 @@ modId = "jei"
 mandatory = false
 versionRange = "[19.0,)"
 ordering = "AFTER"
-side = "CLIENT"
+side = "BOTH"
 
 [[mixins]]
 config = "justenoughcobblemon.mixins.json"
