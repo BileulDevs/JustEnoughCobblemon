@@ -110,9 +110,6 @@ data class SpawnInfo(
         return lines
     }
 
-    /**
-     * Helper function to translate spawn UI keys.
-     */
     private fun tr(key: String): String =
         Component.translatable("justenoughcobblemon.ui.spawn.$key").string
 }
@@ -121,27 +118,32 @@ data class SpawnInfo(
  * Utility object to extract and format spawn data from Cobblemon's world spawn pool.
  *
  * @author Darcosse
- * @version 1.0
+ * @version 1.1
  * @since 2026
  */
 object SpawnDataExtractor {
 
     /**
-     * Retrieves all spawn details for a specific Pokémon species.
+     * Retrieves all spawn details for a specific Pokémon species from the global extracted pool.
      */
     fun getSpawnsForSpecies(speciesId: ResourceLocation): List<SpawnInfo> {
-        return CobblemonSpawnPools.WORLD_SPAWN_POOL.details
-            .filterIsInstance<PokemonSpawnDetail>()
-            .filter { detail ->
-                val detailSpeciesId = detail.pokemon.species ?: return@filter false
-                detailSpeciesId == speciesId.path
-            }
-            .map { extractInfo(it) }
+        return getAllSpawns()[speciesId.path] ?: emptyList()
     }
 
     /**
-     * Extracts raw PokemonSpawnDetail into a structured SpawnInfo object,
-     * including regional aspect detection.
+     * Extracts and groups all available world spawns by their species ID.
+     * Primarily used by the server to prepare network payloads.
+     */
+    fun getAllSpawns(): Map<String, List<SpawnInfo>> {
+        return CobblemonSpawnPools.WORLD_SPAWN_POOL.details
+            .filterIsInstance<PokemonSpawnDetail>()
+            .groupBy { it.pokemon.species ?: "" }
+            .filter { it.key.isNotBlank() }
+            .mapValues { (_, details) -> details.map { extractInfo(it) } }
+    }
+
+    /**
+     * Extracts raw PokemonSpawnDetail into a structured SpawnInfo object.
      */
     private fun extractInfo(detail: PokemonSpawnDetail): SpawnInfo {
         val conditions = detail.conditions
@@ -193,7 +195,7 @@ object SpawnDataExtractor {
     }
 
     /**
-     * Formats biome conditions (ID or Tag) into a readable string.
+     * Formats biome conditions into readable strings.
      */
     private fun formatBiomeCondition(biome: RegistryLikeCondition<Biome>): String {
         return when (biome) {
@@ -204,7 +206,7 @@ object SpawnDataExtractor {
     }
 
     /**
-     * Cleans up ResourceLocation strings for better readability.
+     * Formats ResourceLocation IDs into human-readable names.
      */
     private fun formatId(id: String): String {
         return try {
@@ -217,9 +219,6 @@ object SpawnDataExtractor {
         } catch (e: Exception) { id }
     }
 
-    /**
-     * Accesses the 'ranges' field via reflection to get raw numerical range data.
-     */
     private fun getRangesField(obj: Any): List<IntRange> {
         return try {
             val field = obj::class.java.superclass.getDeclaredField("ranges")
@@ -229,9 +228,6 @@ object SpawnDataExtractor {
         } catch (e: Exception) { emptyList() }
     }
 
-    /**
-     * Formats time ranges into named constants (e.g., "Day") or raw values.
-     */
     private fun formatTimeRange(range: TimeRange): String {
         val rangeRanges = getRangesField(range)
         val known = TimeRange.timeRanges.entries.firstOrNull { (_, v) ->
@@ -240,9 +236,6 @@ object SpawnDataExtractor {
         return known?.key?.replaceFirstChar { it.uppercase() } ?: rangeRanges.joinToString(", ") { "${it.first}..${it.last}" }
     }
 
-    /**
-     * Formats moon phases into named constants or raw values.
-     */
     private fun formatMoonPhase(range: MoonPhaseRange): String {
         val rangeRanges = getRangesField(range)
         val known = MoonPhaseRange.moonPhaseRanges.entries.firstOrNull { (_, v) ->
