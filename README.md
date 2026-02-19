@@ -1,6 +1,6 @@
 # Just Enough Cobblemon
 
-**Just Enough Cobblemon** is a lightweight utility addon for [Cobblemon](https://www.curseforge.com/minecraft/mc-mods/cobblemon). It provides seamless integration with **Just Enough Items (JEI)** / **EMI** to help players discover Pokémon loot, and adds a dedicated **Spawn** tab directly inside the Pokédex.
+**Just Enough Cobblemon** is a lightweight utility addon for [Cobblemon](https://www.curseforge.com/minecraft/mc-mods/cobblemon). It provides seamless integration with **Just Enough Items (JEI)** / **EMI** to help players discover Pokémon loot, and adds a dedicated **Spawn** tab directly inside the Pokédex. Server installation is optional, but required if you want to access spawn data on a multiplayer server.
 
 [![CurseForge](https://img.shields.io/curseforge/dt/1459880?logo=curseforge&label=Downloads&color=f16436)](https://www.curseforge.com/minecraft/mc-mods/just-enough-cobblemon)
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-green?logo=minecraft)](https://www.minecraft.net)
