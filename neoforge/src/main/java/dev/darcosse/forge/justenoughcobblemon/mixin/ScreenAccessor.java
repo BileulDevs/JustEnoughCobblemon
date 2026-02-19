@@ -1,4 +1,4 @@
-package dev.darcosse.common.justenoughcobblemon.mixin;
+package dev.darcosse.forge.justenoughcobblemon.mixin;
 
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;

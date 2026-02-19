@@ -12,6 +12,7 @@ architectury {
 loom {
     enableTransitiveAccessWideners.set(true)
     silentMojangMappingsLicense()
+    accessWidenerPath.set(file("../common/src/main/resources/justenoughcobblemon.accesswidener"))
 
     mixin {
         defaultRefmapName.set("mixins.${project.name}.refmap.json")
