@@ -6,6 +6,7 @@ import com.cobblemon.mod.common.client.gui.pokedex.PokedexGUI;
 import com.cobblemon.mod.common.client.gui.pokedex.ScaledButton;
 import com.cobblemon.mod.common.client.gui.pokedex.PokedexGUIConstants;
 import dev.darcosse.common.justenoughcobblemon.client.gui.PokespawnWidget;
+import dev.darcosse.common.justenoughcobblemon.network.SpawnDataCache;
 import dev.darcosse.common.justenoughcobblemon.util.SpawnDataExtractor;
 import dev.darcosse.common.justenoughcobblemon.util.SpawnInfo;
 import net.minecraft.client.gui.GuiGraphics;
@@ -130,7 +131,7 @@ public class PokedexGUIMixin {
         tabInfoIndex = 5;
         PokespawnWidget widget = new PokespawnWidget(x + 180, y + 135);
 
-        List<SpawnInfo> spawns = SpawnDataExtractor.INSTANCE.getSpawnsForSpecies(selectedEntry.getSpeciesId());
+        List<SpawnInfo> spawns = SpawnDataCache.INSTANCE.getSpawnsForSpecies(selectedEntry.getSpeciesId());
         widget.setSpawns(spawns);
 
         tabInfoElement = widget;

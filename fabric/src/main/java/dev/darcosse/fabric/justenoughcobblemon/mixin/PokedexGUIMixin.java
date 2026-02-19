@@ -13,6 +13,7 @@ import com.cobblemon.mod.common.pokemon.FormData;
 import com.cobblemon.mod.common.pokemon.Species;
 import com.cobblemon.mod.common.pokemon.abilities.HiddenAbility;
 import dev.darcosse.common.justenoughcobblemon.client.gui.PokespawnWidget;
+import dev.darcosse.common.justenoughcobblemon.network.SpawnDataCache;
 import dev.darcosse.common.justenoughcobblemon.util.SpawnDataExtractor;
 import dev.darcosse.common.justenoughcobblemon.util.SpawnInfo;
 import net.minecraft.client.gui.components.Renderable;
@@ -183,7 +184,7 @@ public abstract class PokedexGUIMixin {
             case 5 -> {
                 PokespawnWidget widget = new PokespawnWidget(x + 180, y + 135);
                 if (isEncountered()) {
-                    List<SpawnInfo> spawns = SpawnDataExtractor.INSTANCE.getSpawnsForSpecies(selectedEntry.getSpeciesId());
+                    List<SpawnInfo> spawns = SpawnDataCache.INSTANCE.getSpawnsForSpecies(selectedEntry.getSpeciesId());
                     widget.setSpawns(spawns);
                     if (spawns.size() > 1) {
                         gui.addRenderableWidget(widget.getLeftButton());
