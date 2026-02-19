@@ -21,7 +21,10 @@ import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -29,6 +32,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+/**
+ * Main Mixin for the Pokédex GUI that handles the integration of custom tabs
+ * and extends the UI to support a 6-tab layout including spawn locations.
+ *
+ * @author Darcosse
+ * @version 1.0
+ * @since 2026
+ */
 @Mixin(value = PokedexGUI.class, remap = false)
 public abstract class PokedexGUIMixin {
 
@@ -41,27 +52,43 @@ public abstract class PokedexGUIMixin {
     @Shadow private PokemonInfoWidget pokemonInfoWidget;
 
     @Unique
-    private static final ResourceLocation SPAWN_TAB_ICON =
-        ResourceLocation.fromNamespaceAndPath("cobblemon", "textures/gui/pokedex/tab_locations.png");
-
-    @Unique
     private static final ResourceLocation[] NEW_TAB_ICONS = new ResourceLocation[] {
-        ResourceLocation.fromNamespaceAndPath("cobblemon", "textures/gui/pokedex/tab_info.png"),
-        ResourceLocation.fromNamespaceAndPath("cobblemon", "textures/gui/pokedex/tab_abilities.png"),
-        ResourceLocation.fromNamespaceAndPath("cobblemon", "textures/gui/pokedex/tab_size.png"),
-        ResourceLocation.fromNamespaceAndPath("cobblemon", "textures/gui/pokedex/tab_stats.png"),
-        ResourceLocation.fromNamespaceAndPath("cobblemon", "textures/gui/pokedex/tab_drops.png"),
-        ResourceLocation.fromNamespaceAndPath("cobblemon", "textures/gui/pokedex/tab_locations.png")
+            ResourceLocation.fromNamespaceAndPath("cobblemon", "textures/gui/pokedex/tab_info.png"),
+            ResourceLocation.fromNamespaceAndPath("cobblemon", "textures/gui/pokedex/tab_abilities.png"),
+            ResourceLocation.fromNamespaceAndPath("cobblemon", "textures/gui/pokedex/tab_size.png"),
+            ResourceLocation.fromNamespaceAndPath("cobblemon", "textures/gui/pokedex/tab_stats.png"),
+            ResourceLocation.fromNamespaceAndPath("cobblemon", "textures/gui/pokedex/tab_drops.png"),
+            ResourceLocation.fromNamespaceAndPath("cobblemon", "textures/gui/pokedex/tab_locations.png")
     };
 
+    /**
+     * Helper to cast the current mixin target to PokedexGUI.
+     */
     @Unique
     private static PokedexGUI cast(Object object) {
         return (PokedexGUI)(Object) object;
     }
 
     /**
-     * @author Darcosse
-     * @reason Add custom spawn tab with 6-tab layout
+     * Checks if the current Pokémon entry has been encountered by the player.
+     */
+    @Unique
+    private boolean isEncountered() {
+        return selectedEntry != null &&
+                !CobblemonClient.INSTANCE.getClientPokedexData().getEncounteredForms(selectedEntry).isEmpty();
+    }
+
+    /**
+     * Checks if the current Pokémon form has been caught by the player.
+     */
+    @Unique
+    private boolean isCaught() {
+        return selectedEntry != null &&
+                CobblemonClient.INSTANCE.getClientPokedexData().getCaughtForms(selectedEntry).contains(selectedForm);
+    }
+
+    /**
+     * Reconstructs the tab layout to accommodate 6 tabs and initializes buttons with custom icons.
      */
     @Overwrite
     public void setUpTabs() {
@@ -74,14 +101,14 @@ public abstract class PokedexGUIMixin {
         for (int i = 0; i < NEW_TAB_ICONS.length; i++) {
             int j = i;
             tabButtons.add(new ScaledButton(
-                x + 190.5F + (i * 22F),
-                y + 181.5F,
-                PokedexGUIConstants.TAB_ICON_SIZE,
-                PokedexGUIConstants.TAB_ICON_SIZE,
-                NEW_TAB_ICONS[i],
-                0.5F,
-                false,
-                btn -> { if (gui.canSelectTab(j)) gui.displaytabInfoElement(j, true); }
+                    x + 190.5F + (i * 22F),
+                    y + 181.5F,
+                    PokedexGUIConstants.TAB_ICON_SIZE,
+                    PokedexGUIConstants.TAB_ICON_SIZE,
+                    NEW_TAB_ICONS[i],
+                    0.5F,
+                    false,
+                    btn -> { if (gui.canSelectTab(j)) gui.displaytabInfoElement(j, true); }
             ));
         }
 
@@ -91,22 +118,43 @@ public abstract class PokedexGUIMixin {
     }
 
     /**
-     * @author Darcosse
-     * @reason Handle custom spawn tab (index 5)
+     * Validates if a tab can be selected, specifically allowing the spawn tab (index 5)
+     * for any encountered Pokémon.
+     */
+    @Inject(method = "canSelectTab", at = @At("HEAD"), cancellable = true, remap = false)
+    private void onCanSelectTab(int tabIndex, CallbackInfoReturnable<Boolean> cir) {
+        if (tabIndex == 5) {
+            cir.setReturnValue(isEncountered() && tabIndex != tabInfoIndex);
+        }
+    }
+
+    /**
+     * Handles the instantiation and cleanup of the various information widgets,
+     * including the custom PokespawnWidget.
      */
     @Overwrite
     public void displaytabInfoElement(int tabIndex, boolean update) {
         PokedexGUI gui = cast(this);
-        boolean showActiveTab = selectedEntry != null &&
-            CobblemonClient.INSTANCE.getClientPokedexData().getCaughtForms(selectedEntry).contains(selectedForm);
+
+        boolean showActiveForTab;
+        if (tabIndex == 5) {
+            showActiveForTab = isEncountered();
+        } else {
+            showActiveForTab = isCaught();
+        }
 
         if (!tabButtons.isEmpty() && tabButtons.size() > tabIndex) {
             for (int i = 0; i < tabButtons.size(); i++) {
-                tabButtons.get(i).setWidgetActive(showActiveTab && i == tabIndex);
+                boolean active;
+                if (i == 5) {
+                    active = isEncountered() && i == tabIndex;
+                } else {
+                    active = isCaught() && i == tabIndex;
+                }
+                tabButtons.get(i).setWidgetActive(active);
             }
         }
 
-        // Cleanup previous tab extra widgets
         if (tabInfoIndex == 1 && tabInfoElement instanceof AbilitiesWidget w) {
             gui.removeWidget(w.getLeftButton());
             gui.removeWidget(w.getRightButton());
@@ -134,7 +182,7 @@ public abstract class PokedexGUIMixin {
             case 4 -> tabInfoElement = new DropsScrollingWidget(x + 189, y + 135);
             case 5 -> {
                 PokespawnWidget widget = new PokespawnWidget(x + 180, y + 135);
-                if (selectedEntry != null) {
+                if (isEncountered()) {
                     List<SpawnInfo> spawns = SpawnDataExtractor.INSTANCE.getSpawnsForSpecies(selectedEntry.getSpeciesId());
                     widget.setSpawns(spawns);
                     if (spawns.size() > 1) {
@@ -154,23 +202,21 @@ public abstract class PokedexGUIMixin {
     }
 
     /**
-     * @author Darcosse
-     * @reason Handle custom spawn tab update
+     * Refreshes the content of the active tab based on the selected Pokémon and form data.
      */
     @Overwrite
     public void updateTabInfoElement() {
         PokedexGUI gui = cast(this);
         Species species = selectedEntry == null ? null : PokemonSpecies.INSTANCE.getByIdentifier(selectedEntry.getSpeciesId());
         String formName = selectedForm != null ? selectedForm.getDisplayForm() : null;
-        boolean canDisplay = selectedEntry != null &&
-            CobblemonClient.INSTANCE.getClientPokedexData().getCaughtForms(selectedEntry).contains(selectedForm);
+        boolean canDisplay = isCaught() && species != null;
         List<String> description = new ArrayList<>();
 
-        if (canDisplay && species != null) {
+        if (canDisplay) {
             FormData form = species.getForms().stream()
-                .filter(f -> f.getName().equals(formName))
-                .findFirst()
-                .orElse(species.getStandardForm());
+                    .filter(f -> f.getName().equals(formName))
+                    .findFirst()
+                    .orElse(species.getStandardForm());
 
             switch (tabInfoIndex) {
                 case 0 -> {
@@ -180,9 +226,9 @@ public abstract class PokedexGUIMixin {
                 case 1 -> {
                     if (tabInfoElement instanceof AbilitiesWidget w) {
                         w.setAbilitiesList(StreamSupport.stream(form.getAbilities().spliterator(), false)
-                            .sorted(Comparator.comparing(a -> (a instanceof HiddenAbility) ? 1 : 0))
-                            .map(PotentialAbility::getTemplate)
-                            .collect(Collectors.toList()));
+                                .sorted(Comparator.comparing(a -> (a instanceof HiddenAbility) ? 1 : 0))
+                                .map(PotentialAbility::getTemplate)
+                                .collect(Collectors.toList()));
                         w.setSelectedAbilitiesIndex(0);
                         w.setAbility();
                         w.setScrollAmount(0);
@@ -221,10 +267,10 @@ public abstract class PokedexGUIMixin {
                         w.setEntries();
                     }
                 }
-                case 5 -> {} // handled by setSpawns in displaytabInfoElement
+                case 5 -> {}
             }
         } else {
-            if (tabInfoIndex != 0) gui.displaytabInfoElement(0, true);
+            if (tabInfoIndex != 0 && tabInfoIndex != 5) gui.displaytabInfoElement(0, true);
             if (tabInfoElement instanceof DescriptionWidget w) w.setShowPlaceholder(true);
         }
 
@@ -235,17 +281,32 @@ public abstract class PokedexGUIMixin {
     }
 
     /**
-     * Modifies the arrow X position to support 6-tab layout.
+     * Resets the tab state when switching to a different Pokémon entry.
+     */
+    @Inject(method = "setSelectedEntry", at = @At("HEAD"), remap = false)
+    private void onSetSelectedEntry(PokedexEntry newSelectedEntry, CallbackInfo ci) {
+        if (tabInfoIndex == 5) {
+            PokedexGUI gui = cast(this);
+            if (tabInfoElement instanceof PokespawnWidget w) {
+                gui.removeWidget(w.getLeftButton());
+                gui.removeWidget(w.getRightButton());
+            }
+            tabInfoIndex = 0;
+        }
+    }
+
+    /**
+     * Dynamically modifies the X coordinate of the selection arrow blit call to align with 6 tabs.
      */
     @ModifyArg(
-        method = "render",
-        at = @At(
-            value = "INVOKE",
-            target = "Lcom/cobblemon/mod/common/api/gui/GuiUtilsKt;blitk$default(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/resources/ResourceLocation;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;ZFILjava/lang/Object;)V",
-            ordinal = 5
-        ),
-        index = 2,
-        remap = true
+            method = "render",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lcom/cobblemon/mod/common/api/gui/GuiUtilsKt;blitk$default(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/resources/ResourceLocation;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;ZFILjava/lang/Object;)V",
+                    ordinal = 5
+            ),
+            index = 2,
+            remap = true
     )
     private Number modifyArrowX(Number original) {
         PokedexGUI self = cast(this);
