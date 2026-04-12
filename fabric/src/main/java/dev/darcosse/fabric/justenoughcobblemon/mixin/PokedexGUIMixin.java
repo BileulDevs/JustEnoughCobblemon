@@ -23,7 +23,6 @@ import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -41,16 +40,15 @@ import java.util.stream.StreamSupport;
  * @version 1.0
  * @since 2026
  */
-@Mixin(value = PokedexGUI.class, remap = false)
+@Mixin(value = PokedexGUI.class)
 public abstract class PokedexGUIMixin {
 
-    @Shadow @Final private static ResourceLocation[] tabIcons;
-    @Shadow @Final private List<ScaledButton> tabButtons;
-    @Shadow private int tabInfoIndex;
-    @Shadow public GuiEventListener tabInfoElement;
-    @Shadow private PokedexEntry selectedEntry;
-    @Shadow private PokedexForm selectedForm;
-    @Shadow private PokemonInfoWidget pokemonInfoWidget;
+    @Shadow(remap = false) @Final private List<ScaledButton> tabButtons;
+    @Shadow(remap = false) private int tabInfoIndex;
+    @Shadow(remap = false) public GuiEventListener tabInfoElement;
+    @Shadow(remap = false) private PokedexEntry selectedEntry;
+    @Shadow(remap = false) private PokedexForm selectedForm;
+    @Shadow(remap = false) private PokemonInfoWidget pokemonInfoWidget;
 
     @Unique
     private static final ResourceLocation[] NEW_TAB_ICONS = new ResourceLocation[] {
@@ -90,8 +88,10 @@ public abstract class PokedexGUIMixin {
 
     /**
      * Reconstructs the tab layout to accommodate 6 tabs and initializes buttons with custom icons.
+     * * @author Darcosse
+     * @reason Adding custom tabs for spawn data integration.
      */
-    @Overwrite
+    @Overwrite(remap = false)
     public void setUpTabs() {
         PokedexGUI gui = cast(this);
         int x = (gui.width - PokedexGUIConstants.BASE_WIDTH) / 2;
@@ -132,39 +132,23 @@ public abstract class PokedexGUIMixin {
     /**
      * Handles the instantiation and cleanup of the various information widgets,
      * including the custom PokespawnWidget.
+     * * @author Darcosse
+     * @reason Handling cleanup and instantiation of custom PokespawnWidget.
      */
-    @Overwrite
+    @Overwrite(remap = false)
     public void displaytabInfoElement(int tabIndex, boolean update) {
         PokedexGUI gui = cast(this);
 
-        boolean showActiveForTab;
-        if (tabIndex == 5) {
-            showActiveForTab = isEncountered();
-        } else {
-            showActiveForTab = isCaught();
-        }
-
-        if (!tabButtons.isEmpty() && tabButtons.size() > tabIndex) {
-            for (int i = 0; i < tabButtons.size(); i++) {
-                boolean active;
-                if (i == 5) {
-                    active = isEncountered() && i == tabIndex;
-                } else {
-                    active = isCaught() && i == tabIndex;
-                }
-                tabButtons.get(i).setWidgetActive(active);
-            }
-        }
-
-        if (tabInfoIndex == 1 && tabInfoElement instanceof AbilitiesWidget w) {
+        // ALWAYS clear sub-buttons from the PREVIOUS tab before switching
+        if (tabInfoElement instanceof AbilitiesWidget w) {
             gui.removeWidget(w.getLeftButton());
             gui.removeWidget(w.getRightButton());
-        } else if (tabInfoIndex == 3 && tabInfoElement instanceof StatsWidget w) {
+        } else if (tabInfoElement instanceof StatsWidget w) {
             gui.removeWidget(w.getLeftButton());
             gui.removeWidget(w.getRightButton());
             gui.removeWidget(w.getLeftSubButton());
             gui.removeWidget(w.getRightSubButton());
-        } else if (tabInfoIndex == 5 && tabInfoElement instanceof PokespawnWidget w) {
+        } else if (tabInfoElement instanceof PokespawnWidget w) {
             gui.removeWidget(w.getLeftButton());
             gui.removeWidget(w.getRightButton());
         }
@@ -177,25 +161,24 @@ public abstract class PokedexGUIMixin {
 
         switch (tabIndex) {
             case 0 -> tabInfoElement = new DescriptionWidget(x + 180, y + 135);
-            case 1 -> tabInfoElement = new AbilitiesWidget(x + 180, y + 135);
+            case 1 -> {
+                AbilitiesWidget w = new AbilitiesWidget(x + 180, y + 135);
+                tabInfoElement = w;
+                gui.addRenderableWidget(w.getLeftButton());
+                gui.addRenderableWidget(w.getRightButton());
+            }
             case 2 -> tabInfoElement = new SizeWidget(x + 180, y + 135);
             case 3 -> tabInfoElement = new StatsWidget(x + 180, y + 135);
             case 4 -> tabInfoElement = new DropsScrollingWidget(x + 189, y + 135);
             case 5 -> {
                 PokespawnWidget widget = new PokespawnWidget(x + 180, y + 135);
-                if (isEncountered()) {
-                    List<SpawnInfo> spawns = SpawnDataCache.INSTANCE.getSpawnsForSpecies(selectedEntry.getSpeciesId());
-                    widget.setSpawns(spawns);
-                    if (spawns.size() > 1) {
-                        gui.addRenderableWidget(widget.getLeftButton());
-                        gui.addRenderableWidget(widget.getRightButton());
-                    }
-                }
                 tabInfoElement = widget;
+                gui.addRenderableWidget(widget.getLeftButton());
+                gui.addRenderableWidget(widget.getRightButton());
             }
         }
 
-        if (tabInfoElement instanceof Renderable && tabInfoElement instanceof NarratableEntry) {
+        if (tabInfoElement instanceof Renderable renderable && tabInfoElement instanceof NarratableEntry narratable) {
             gui.addRenderableWidget((GuiEventListener & Renderable & NarratableEntry) tabInfoElement);
         }
 
@@ -204,8 +187,10 @@ public abstract class PokedexGUIMixin {
 
     /**
      * Refreshes the content of the active tab based on the selected Pokémon and form data.
+     * * @author Darcosse
+     * @reason Updating widget data for custom spawn tab.
      */
-    @Overwrite
+    @Overwrite(remap = false)
     public void updateTabInfoElement() {
         PokedexGUI gui = cast(this);
         Species species = selectedEntry == null ? null : PokemonSpecies.INSTANCE.getByIdentifier(selectedEntry.getSpeciesId());
@@ -233,10 +218,6 @@ public abstract class PokedexGUIMixin {
                         w.setSelectedAbilitiesIndex(0);
                         w.setAbility();
                         w.setScrollAmount(0);
-                        if (w.getAbilitiesList().size() > 1) {
-                            gui.addRenderableWidget(w.getLeftButton());
-                            gui.addRenderableWidget(w.getRightButton());
-                        }
                     }
                 }
                 case 2 -> {
@@ -252,14 +233,6 @@ public abstract class PokedexGUIMixin {
                     if (tabInfoElement instanceof StatsWidget w) {
                         w.setBaseStats(form.getBaseStats());
                         w.setRideProperties(form.getRiding());
-                        if (form.getRiding().getBehaviours() != null) {
-                            gui.addRenderableWidget(w.getLeftButton());
-                            gui.addRenderableWidget(w.getRightButton());
-                            if (form.getRiding().getBehaviours().size() > 1) {
-                                gui.addRenderableWidget(w.getLeftSubButton());
-                                gui.addRenderableWidget(w.getRightSubButton());
-                            }
-                        }
                     }
                 }
                 case 4 -> {
@@ -294,24 +267,5 @@ public abstract class PokedexGUIMixin {
             }
             tabInfoIndex = 0;
         }
-    }
-
-    /**
-     * Dynamically modifies the X coordinate of the selection arrow blit call to align with 6 tabs.
-     */
-    @ModifyArg(
-            method = "render",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lcom/cobblemon/mod/common/api/gui/GuiUtilsKt;blitk$default(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/resources/ResourceLocation;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;ZFILjava/lang/Object;)V",
-                    ordinal = 5
-            ),
-            index = 2,
-            remap = true
-    )
-    private Number modifyArrowX(Number original) {
-        PokedexGUI self = cast(this);
-        int x = (self.width - PokedexGUIConstants.BASE_WIDTH) / 2;
-        return (x + 191.5F + (22 * tabInfoIndex)) / 0.5F;
     }
 }
