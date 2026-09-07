@@ -150,7 +150,7 @@ object SpawnDataExtractor {
         val anticonditions = detail.anticonditions
 
         return SpawnInfo(
-            bucket = detail.bucket.name,
+            bucket = detail.bucket.toString(),
             weight = detail.weight,
             levelRange = detail.levelRange,
             form = detail.pokemon.aspects

@@ -26,7 +26,7 @@
   ],
   "depends": {
     "minecraft": "1.21.1",
-    "cobblemon": ">=1.7.1 <1.8.0"
+    "cobblemon": ">=1.8.0"
   },
   "suggests": {
     "jei": "*",

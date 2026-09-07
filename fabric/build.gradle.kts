@@ -33,6 +33,12 @@ dependencies {
     modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin")}")
     modImplementation("com.cobblemon:fabric:${property("cobblemon_version")}") { isTransitive = false }
 
+    modRuntimeOnly("org.graalvm.js:js:22.3.0")
+    modRuntimeOnly("org.graalvm.sdk:graal-sdk:22.3.0")
+    modRuntimeOnly("org.graalvm.regex:regex:22.3.0")
+    modRuntimeOnly("org.graalvm.truffle:truffle-api:22.3.0")
+    modRuntimeOnly("com.ibm.icu:icu4j:71.1")
+
     // Architectury : Liaison avec le module Common
     implementation(project(":common", configuration = "namedElements"))
     "developmentFabric"(project(":common", configuration = "namedElements"))
