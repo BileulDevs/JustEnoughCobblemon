@@ -4,218 +4,247 @@ import com.cobblemon.mod.common.api.pokedex.entry.PokedexEntry;
 import com.cobblemon.mod.common.api.pokedex.entry.PokedexForm;
 import com.cobblemon.mod.common.client.CobblemonClient;
 import com.cobblemon.mod.common.client.gui.pokedex.PokedexGUI;
-import com.cobblemon.mod.common.client.gui.pokedex.ScaledButton;
 import com.cobblemon.mod.common.client.gui.pokedex.PokedexGUIConstants;
-import com.cobblemon.mod.common.client.gui.pokedex.widgets.AbilitiesWidget;
-import com.cobblemon.mod.common.client.gui.pokedex.widgets.DescriptionWidget;
-import com.cobblemon.mod.common.client.gui.pokedex.widgets.DropsScrollingWidget;
-import com.cobblemon.mod.common.client.gui.pokedex.widgets.SizeWidget;
-import com.cobblemon.mod.common.client.gui.pokedex.widgets.StatsWidget;
+import com.cobblemon.mod.common.client.gui.pokedex.ScaledButton;
+import com.cobblemon.mod.common.client.gui.pokedex.widgets.PokemonInfoWidget;
 import dev.darcosse.common.justenoughcobblemon.client.gui.PokespawnWidget;
 import dev.darcosse.common.justenoughcobblemon.network.SpawnDataCache;
 import dev.darcosse.common.justenoughcobblemon.util.SpawnInfo;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.GuiEventListener;
-import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.resources.ResourceLocation;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
- * Mixin for the Pokédex GUI on Forge/NeoForge.
- * Manages the manual injection of the spawn locations tab and custom arrow rendering.
+ * Adds a "spawn locations" tab to the Cobblemon Pokedex GUI (NeoForge).
+ *
+ * Functionally identical to the Fabric mixin. The only platform difference is
+ * that Screen#addRenderableWidget and Screen#removeWidget are protected here,
+ * so they are reached through ScreenAccessor instead of a direct cast.
+ *
+ * DESIGN NOTES (verified against Cobblemon 1.8.0 sources):
+ *
+ * - Our tab is appended AFTER every vanilla tab, at index tabIcons.length (6 in
+ *   1.8.0, where index 5 is TAB_MOVES). We never claim an index Cobblemon uses,
+ *   so their unchecked casts -- notably `tabInfoElement as MovesLearnsetWidget`
+ *   in mouseScrolled -- can never see our widget.
+ *
+ * - The tab row is squeezed from a 22px step to ~18.33px so all 7 tabs stay
+ *   inside the blue bar drawn in pokedex_screen.png, which is sized for 6 tabs.
+ *   The selection arrow reads the same step, so the two cannot drift apart.
+ *
+ * - getSufficientlyKnownForms() gates both the selection arrow and the active
+ *   tab highlight behind CAUGHT forms, except for tabs listed in looseUnlockTabs
+ *   (drops, moves) which only need an encounter. Our tab needs the loose rule.
  *
  * @author Darcosse
- * @version 1.0
+ * @version 1.3.0
  * @since 2026
  */
 @Mixin(value = PokedexGUI.class, remap = false)
-public class PokedexGUIMixin {
+public abstract class PokedexGUIMixin {
 
-    @Shadow private List<ScaledButton> tabButtons;
+    @Shadow @Final private static ResourceLocation[] tabIcons;
+    @Shadow @Final private List<ScaledButton> tabButtons;
+    @Shadow private int tabInfoIndex;
     @Shadow public GuiEventListener tabInfoElement;
-    @Shadow public int tabInfoIndex;
-    @Shadow private static ResourceLocation tabSelectArrow;
     @Shadow private PokedexEntry selectedEntry;
-    @Shadow private PokedexForm selectedForm;
-    @Shadow public boolean canSelectTab(int tabIndex) { return false; }
-    @Shadow public void updateTabInfoElement() {}
+    @Shadow private PokemonInfoWidget pokemonInfoWidget;
 
-    @Unique private int savedTabInfoIndex = -1;
+    @Shadow public boolean canSelectTab(int tabIndex) { throw new AssertionError(); }
+    @Shadow public void displaytabInfoElement(int tabIndex, boolean update) { throw new AssertionError(); }
+    @Shadow public void updateTabInfoElement() { throw new AssertionError(); }
+
+    @Unique
+    private static final ResourceLocation JEC$SPAWN_ICON =
+            ResourceLocation.fromNamespaceAndPath("cobblemon", "textures/gui/pokedex/tab_locations.png");
+
+    /** Left edge of the tab row, as in vanilla setUpTabs. */
+    @Unique
+    private static final float JEC$TAB_ORIGIN_X = 190.5F;
+
+    /** X of the selection arrow relative to the row: vanilla uses origin + 1px. */
+    @Unique
+    private static final float JEC$ARROW_ORIGIN_X = 191.5F;
+
+    /** Width the vanilla row spans: 6 tabs at a 22px step = 110px. */
+    @Unique
+    private static final float JEC$TAB_ROW_WIDTH = 110F;
 
     /**
-     * Checks if the Pokémon has been encountered.
+     * Step between tabs, squeezed so that all tabs still fit inside the blue bar.
+     * With 7 tabs this yields ~18.33px instead of 22px.
      */
     @Unique
-    private boolean isEncountered() {
+    private static float jec$tabStep() {
+        return JEC$TAB_ROW_WIDTH / tabIcons.length;
+    }
+
+    /** Our tab always sits one past the last vanilla tab. */
+    @Unique
+    private static int jec$spawnTabIndex() {
+        return tabIcons.length;
+    }
+
+    @Unique
+    private static PokedexGUI jec$cast(Object object) {
+        return (PokedexGUI)(Object) object;
+    }
+
+    @Unique
+    private ScreenAccessor jec$screen() {
+        return (ScreenAccessor)(Object) this;
+    }
+
+    @Unique
+    private boolean jec$isEncountered() {
         return selectedEntry != null &&
                 !CobblemonClient.INSTANCE.getClientPokedexData().getEncounteredForms(selectedEntry).isEmpty();
     }
 
-    /**
-     * Checks if the current form has been caught.
-     */
     @Unique
-    private boolean isCaught() {
-        return selectedEntry != null &&
-                CobblemonClient.INSTANCE.getClientPokedexData().getCaughtForms(selectedEntry).contains(selectedForm);
-    }
-
-    /**
-     * Temporarily hides the original selection arrow before rendering.
-     */
-    @Inject(method = "render", at = @At("HEAD"))
-    private void hideOriginalArrow(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-        savedTabInfoIndex = tabInfoIndex;
-        tabInfoIndex = -100;
-    }
-
-    /**
-     * Manually draws the selection arrow at the correct position for the 6-tab layout.
-     */
-    @Inject(method = "render", at = @At("TAIL"))
-    private void drawCorrectArrow(GuiGraphics context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-        tabInfoIndex = savedTabInfoIndex;
-        PokedexGUI self = (PokedexGUI)(Object)this;
-        int x = (self.width - PokedexGUIConstants.BASE_WIDTH) / 2;
-        int y = (self.height - PokedexGUIConstants.BASE_HEIGHT) / 2;
-
-        int newX = (int)(x + 191.5F + (22 * tabInfoIndex));
-        int newY = y + 177;
-        context.pose().pushPose();
-        context.pose().scale(0.5F, 0.5F, 1.0F);
-        context.blit(tabSelectArrow, newX * 2, newY * 2, 0, 0, 12, 6, 12, 6);
-        context.pose().popPose();
-    }
-
-    /**
-     * Adjusts existing tab positions and injects the custom spawn locations tab.
-     */
-    @Inject(method = "setUpTabs", at = @At("TAIL"))
-    private void injectMyTab(CallbackInfo ci) {
-        PokedexGUI self = (PokedexGUI)(Object)this;
-        int x = (self.width - PokedexGUIConstants.BASE_WIDTH) / 2;
-        int y = (self.height - PokedexGUIConstants.BASE_HEIGHT) / 2;
-
-        for (int i = 0; i < tabButtons.size(); i++) {
-            float newX = x + 190.5F + (i * 22F);
-            tabButtons.get(i).setButtonX(newX);
-            tabButtons.get(i).setX((int) newX);
+    private void jec$removeSpawnButtons() {
+        if (tabInfoElement instanceof PokespawnWidget w) {
+            jec$screen().invokeRemoveWidget(w.getLeftButton());
+            jec$screen().invokeRemoveWidget(w.getRightButton());
         }
-
-        ResourceLocation myIcon = ResourceLocation.fromNamespaceAndPath("cobblemon", "textures/gui/pokedex/tab_locations.png");
-
-        ScaledButton myTab = new ScaledButton(
-                x + 190.5F + (5 * 22F),
-                y + 181.5F,
-                PokedexGUIConstants.TAB_ICON_SIZE,
-                PokedexGUIConstants.TAB_ICON_SIZE,
-                myIcon,
-                0.5F,
-                false,
-                (btn) -> {
-                    if (canSelectTab(5)) displaytabInfoElement(5, true);
-                }
-        );
-        tabButtons.add(myTab);
-        ((ScreenAccessor)(Object)self).invokeAddRenderableWidget(myTab);
     }
 
     /**
-     * Overwrites tab element display logic to handle the custom PokespawnWidget
-     * and specific visibility rules for encountered vs caught Pokémon.
+     * Rebuilds the tab row with one extra button appended after the vanilla ones.
      */
     @Overwrite
-    public void displaytabInfoElement(int tabIndex, boolean update) {
-        PokedexGUI self = (PokedexGUI)(Object)this;
-        int x = (self.width - PokedexGUIConstants.BASE_WIDTH) / 2;
-        int y = (self.height - PokedexGUIConstants.BASE_HEIGHT) / 2;
+    public void setUpTabs() {
+        PokedexGUI gui = jec$cast(this);
+        int x = (gui.width - PokedexGUIConstants.BASE_WIDTH) / 2;
+        int y = (gui.height - PokedexGUIConstants.BASE_HEIGHT) / 2;
 
-        for (int i = 0; i < tabButtons.size(); i++) {
-            boolean active;
-            if (i == 5) {
-                active = isEncountered() && i == tabIndex;
-            } else {
-                active = isCaught() && i == tabIndex;
-            }
-            tabButtons.get(i).setWidgetActive(active);
+        ResourceLocation[] icons = Arrays.copyOf(tabIcons, tabIcons.length + 1);
+        icons[jec$spawnTabIndex()] = JEC$SPAWN_ICON;
+
+        if (!tabButtons.isEmpty()) tabButtons.clear();
+
+        float step = jec$tabStep();
+        for (int i = 0; i < icons.length; i++) {
+            int j = i;
+            tabButtons.add(new ScaledButton(
+                    x + JEC$TAB_ORIGIN_X + (i * step),
+                    y + 181.5F,
+                    PokedexGUIConstants.TAB_ICON_SIZE,
+                    PokedexGUIConstants.TAB_ICON_SIZE,
+                    icons[i],
+                    PokedexGUIConstants.SCALE,
+                    false,
+                    btn -> { if (canSelectTab(j)) displaytabInfoElement(j, true); }
+            ));
         }
 
-        if (tabInfoIndex == 1 && tabInfoElement instanceof AbilitiesWidget w) {
-            ((ScreenAccessor)(Object)self).invokeRemoveWidget(w.getLeftButton());
-            ((ScreenAccessor)(Object)self).invokeRemoveWidget(w.getRightButton());
-        } else if (tabInfoIndex == 3 && tabInfoElement instanceof StatsWidget w) {
-            ((ScreenAccessor)(Object)self).invokeRemoveWidget(w.getLeftButton());
-            ((ScreenAccessor)(Object)self).invokeRemoveWidget(w.getRightButton());
-            ((ScreenAccessor)(Object)self).invokeRemoveWidget(w.getLeftSubButton());
-            ((ScreenAccessor)(Object)self).invokeRemoveWidget(w.getRightSubButton());
-        } else if (tabInfoIndex == 5 && tabInfoElement instanceof PokespawnWidget w) {
-            ((ScreenAccessor)(Object)self).invokeRemoveWidget(w.getLeftButton());
-            ((ScreenAccessor)(Object)self).invokeRemoveWidget(w.getRightButton());
+        for (ScaledButton btn : tabButtons) {
+            jec$screen().invokeAddRenderableWidget(btn);
+        }
+    }
+
+    /**
+     * Treat our tab like a looseUnlockTab: seeing the Pokemon is enough.
+     * This drives the selection arrow in render() and the active tab highlight.
+     */
+    @Inject(method = "getSufficientlyKnownForms", at = @At("HEAD"), cancellable = true)
+    private void jec$looseUnlockForSpawnTab(PokedexEntry entry, int tabIndex,
+                                            CallbackInfoReturnable<Collection<PokedexForm>> cir) {
+        if (tabIndex == jec$spawnTabIndex()) {
+            cir.setReturnValue(CobblemonClient.INSTANCE.getClientPokedexData().getEncounteredForms(entry));
+        }
+    }
+
+    /**
+     * Builds our widget when our tab is selected, and cancels so Cobblemon's
+     * `when (tabIndex)` never runs. For every other index we clean up our own
+     * buttons and let the original method proceed untouched.
+     */
+    @Inject(method = "displaytabInfoElement", at = @At("HEAD"), cancellable = true)
+    private void jec$displaySpawnTab(int tabIndex, boolean update, CallbackInfo ci) {
+        PokedexGUI gui = jec$cast(this);
+
+        // Leaving our tab: drop our arrows before the original logic takes over.
+        if (tabInfoIndex == jec$spawnTabIndex()) {
+            jec$removeSpawnButtons();
+        }
+
+        if (tabIndex != jec$spawnTabIndex()) return;
+
+        for (int i = 0; i < tabButtons.size(); i++) {
+            tabButtons.get(i).setWidgetActive(i == tabIndex && jec$isEncountered());
         }
 
         tabInfoIndex = tabIndex;
-        if (tabInfoElement != null) {
-            ((ScreenAccessor)(Object)self).invokeRemoveWidget(tabInfoElement);
-        }
+        // lateinit on the Kotlin side: null until init() has run.
+        if (pokemonInfoWidget != null) pokemonInfoWidget.setSuppressViewport(false);
+        if (tabInfoElement != null) jec$screen().invokeRemoveWidget(tabInfoElement);
 
-        switch (tabIndex) {
-            case 0 -> tabInfoElement = new DescriptionWidget(x + 180, y + 135);
-            case 1 -> tabInfoElement = new AbilitiesWidget(x + 180, y + 135);
-            case 2 -> tabInfoElement = new SizeWidget(x + 180, y + 135);
-            case 3 -> tabInfoElement = new StatsWidget(x + 180, y + 135);
-            case 4 -> tabInfoElement = new DropsScrollingWidget(x + 189, y + 135);
-            case 5 -> {
-                PokespawnWidget widget = new PokespawnWidget(x + 180, y + 135);
-                if (isEncountered()) {
-                    List<SpawnInfo> spawns = SpawnDataCache.INSTANCE.getSpawnsForSpecies(selectedEntry.getSpeciesId());
-                    widget.setSpawns(spawns);
-                    if (spawns.size() > 1) {
-                        ((ScreenAccessor)(Object)self).invokeAddRenderableWidget(widget.getLeftButton());
-                        ((ScreenAccessor)(Object)self).invokeAddRenderableWidget(widget.getRightButton());
-                    }
-                }
-                tabInfoElement = widget;
+        int x = (gui.width - PokedexGUIConstants.BASE_WIDTH) / 2;
+        int y = (gui.height - PokedexGUIConstants.BASE_HEIGHT) / 2;
+
+        PokespawnWidget widget = new PokespawnWidget(x + 180, y + 135);
+        if (jec$isEncountered()) {
+            List<SpawnInfo> spawns = SpawnDataCache.INSTANCE.getSpawnsForSpecies(selectedEntry.getSpeciesId());
+            widget.setSpawns(spawns);
+            if (spawns.size() > 1) {
+                jec$screen().invokeAddRenderableWidget(widget.getLeftButton());
+                jec$screen().invokeAddRenderableWidget(widget.getRightButton());
             }
         }
+        tabInfoElement = widget;
+        jec$screen().invokeAddRenderableWidget(widget);
 
-        if (tabInfoElement instanceof Renderable && tabInfoElement instanceof NarratableEntry) {
-            ((ScreenAccessor)(Object)self).invokeAddRenderableWidget(
-                    (GuiEventListener & Renderable & NarratableEntry) tabInfoElement
-            );
-        }
+        // Mirror vanilla: keep tab icons above the tab content.
+        for (ScaledButton btn : tabButtons) jec$screen().invokeRemoveWidget(btn);
+        for (ScaledButton btn : tabButtons) jec$screen().invokeAddRenderableWidget(btn);
 
         if (update) updateTabInfoElement();
+        ci.cancel();
     }
 
     /**
-     * Ensures clean widget removal when switching Pokémon entries while on the spawn tab.
+     * Realigns the selection arrow with the compressed tab step.
+     *
+     * ORDINAL: counting blitk calls in render() -- base texture, screenBackground,
+     * globeIcon, caughtSeenIcon (seen), caughtSeenIcon (caught), categoryBarOverlay,
+     * categoryFilterIcon, then tabSelectArrow -- the arrow is ordinal 7.
+     * Vanilla passes x = (x + 191.5 + 22 * tabInfoIndex) / SCALE, already divided,
+     * so we return an already-divided value too.
      */
-    @Inject(method = "setSelectedEntry", at = @At("HEAD"))
-    private void onSetSelectedEntry(PokedexEntry newSelectedEntry, CallbackInfo ci) {
-        if (tabInfoIndex == 5) {
-            PokedexGUI self = (PokedexGUI)(Object)this;
-            if (tabInfoElement instanceof PokespawnWidget w) {
-                ((ScreenAccessor)(Object)self).invokeRemoveWidget(w.getLeftButton());
-                ((ScreenAccessor)(Object)self).invokeRemoveWidget(w.getRightButton());
-            }
-            tabInfoIndex = 0;
-        }
+    @ModifyArg(
+            method = "render",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lcom/cobblemon/mod/common/api/gui/GuiUtilsKt;blitk$default(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/resources/ResourceLocation;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;Ljava/lang/Number;ZFILjava/lang/Object;)V",
+                    ordinal = 7
+            ),
+            index = 2
+    )
+    private Number jec$modifyArrowX(Number original) {
+        PokedexGUI self = jec$cast(this);
+        int x = (self.width - PokedexGUIConstants.BASE_WIDTH) / 2;
+        return (x + JEC$ARROW_ORIGIN_X + (jec$tabStep() * tabInfoIndex)) / PokedexGUIConstants.SCALE;
     }
 
     /**
-     * Cancels the default update logic for tab index 5, as it is handled by the custom widget.
+     * Our widget is populated at creation time, so there is nothing to refresh.
+     * Cancelling also avoids the original's trailing cast of tabInfoElement to
+     * DescriptionWidget when the Pokemon is seen but not caught.
      */
     @Inject(method = "updateTabInfoElement", at = @At("HEAD"), cancellable = true)
-    private void injectUpdateTab(CallbackInfo ci) {
-        if (tabInfoIndex == 5) ci.cancel();
+    private void jec$skipUpdateOnSpawnTab(CallbackInfo ci) {
+        if (tabInfoIndex == jec$spawnTabIndex()) {
+            ci.cancel();
+        }
     }
 }
