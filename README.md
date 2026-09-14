@@ -1,6 +1,6 @@
 # Just Enough Cobblemon
 
-A lightweight utility addon for [Cobblemon](https://www.curseforge.com/minecraft/mc-mods/cobblemon). It surfaces two things the base mod keeps hidden: **what every Pokémon drops**, through JEI or EMI, and **where every Pokémon spawns**, through a new tab inside the Pokédex.
+A lightweight utility addon for [Cobblemon](https://www.curseforge.com/minecraft/mc-mods/cobblemon). It surfaces two things the base mod keeps hidden: **what every Pokémon drops**, through JEI or EMI, and **where every Pokémon spawns**, through a new tab inside the Pokédex. Server installation is optional, but required if you want to access spawn data on a multiplayer server.
 
 The Pokédex tab works on its own. JEI or EMI is only needed for the loot side.
 
