@@ -9,6 +9,7 @@ import com.cobblemon.mod.common.util.cobblemonResource
 import dev.darcosse.common.justenoughcobblemon.util.SpawnInfo
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.network.chat.Component
+import dev.darcosse.common.justenoughcobblemon.network.SpawnDataCache
 
 /**
  * Custom widget for displaying Pokémon spawn information within the Pokedex GUI.
@@ -86,11 +87,27 @@ class PokespawnWidget(x: Int, y: Int) : InfoTextScrollWidget(pX = x, pY = y) {
     }
 
     /**
+     * Which message to show when there is nothing to display.
+     *
+     * An empty cache means one of two things, and they call for different
+     * reactions from the player: either this species genuinely has no spawn
+     * entry, or the server simply does not have the mod and never sent
+     * anything. Showing "No spawn data" for the second case reads as a bug in
+     * the mod rather than a missing install.
+     */
+    private fun emptyStateKey(): String =
+        if (SpawnDataCache.isServerSupported()) {
+            "justenoughcobblemon.ui.spawn.no_data"
+        } else {
+            "justenoughcobblemon.ui.spawn.server_missing"
+        }
+
+    /**
      * Updates the scrollable text area with the content of the currently selected spawn.
      */
     private fun refreshText() {
         if (spawns.isEmpty()) {
-            setText(listOf(Component.translatable("justenoughcobblemon.ui.spawn.no_data").string))
+            setText(listOf(Component.translatable(emptyStateKey()).string))
         } else {
             setText(spawns[selectedIndex].toDisplayLines())
         }
@@ -102,7 +119,7 @@ class PokespawnWidget(x: Int, y: Int) : InfoTextScrollWidget(pX = x, pY = y) {
      */
     override fun renderWidget(context: GuiGraphics, mouseX: Int, mouseY: Int, delta: Float) {
         val title = if (spawns.isEmpty()) {
-            Component.translatable("justenoughcobblemon.ui.spawn.no_data")
+            Component.translatable(emptyStateKey())
         } else {
             Component.translatable(
                 "justenoughcobblemon.ui.spawn.title",

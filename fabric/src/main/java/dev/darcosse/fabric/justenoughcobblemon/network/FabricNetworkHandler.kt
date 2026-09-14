@@ -59,7 +59,16 @@ object FabricNetworkHandler {
      */
     fun registerClient() {
         ClientPlayConnectionEvents.JOIN.register { _, sender, _ ->
-            sender.sendPacket(RequestSpawnDataPayload())
+            // Only ask if the server declared the channel. Firing blindly at a
+            // server without the mod is at best ignored and at worst treated as
+            // a protocol error, and either way the empty tab needs to be able
+            // to tell the player WHY it is empty.
+            if (ClientPlayNetworking.canSend(RequestSpawnDataPayload.TYPE)) {
+                SpawnDataCache.markServerSupported(true)
+                sender.sendPacket(RequestSpawnDataPayload())
+            } else {
+                SpawnDataCache.markServerSupported(false)
+            }
         }
 
         ClientPlayNetworking.registerGlobalReceiver(SpawnDataPayload.TYPE) { payload, context ->
