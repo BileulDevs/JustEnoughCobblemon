@@ -26,7 +26,13 @@ object NeoForgeNetworkHandler {
      * and defines the codecs used for serialization and deserialization.
      */
     fun register(event: RegisterPayloadHandlersEvent) {
-        val registrar: PayloadRegistrar = event.registrar("1")
+        // optional() is what makes the mod genuinely optional on a server.
+        //
+        // Without it, NeoForge treats these payloads as required channels and
+        // refuses the connection outright when only one side has the mod —
+        // in BOTH directions. For a purely informational addon that is a
+        // connection-blocking bug, not a feature.
+        val registrar: PayloadRegistrar = event.registrar("1").optional()
 
         registrar.playToServer(
             RequestSpawnDataPayload.TYPE,
