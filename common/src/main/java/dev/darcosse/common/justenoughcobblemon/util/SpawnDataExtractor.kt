@@ -13,6 +13,7 @@ import com.cobblemon.mod.common.registry.BiomeIdentifierCondition
 import com.cobblemon.mod.common.registry.BiomeTagCondition
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.tags.TagKey
 import net.minecraft.world.level.biome.Biome
 
 /**
@@ -204,7 +205,9 @@ data class SpawnInfo(
      * remainder is summarised as a count.
      */
     private fun addCapped(lines: MutableList<String>, values: List<String>) {
-        values.take(MAX_BLOCKS_SHOWN).forEach { lines.add("  §7$it") }
+        values.take(MAX_BLOCKS_SHOWN).forEach { value ->
+            lines.addAll(wrapWithPrefix(value, "  §7", MAX_LINE_CHARS))
+        }
 
         val remaining = values.size - MAX_BLOCKS_SHOWN
         if (remaining > 0) {
@@ -212,9 +215,37 @@ data class SpawnInfo(
         }
     }
 
+    /**
+     * Wraps a value onto several lines, repeating the prefix on each one.
+     *
+     * Legacy formatting codes do not survive a line break inserted by the
+     * renderer: the continuation restarts uncoloured and unindented. Breaking
+     * the line here instead keeps every fragment styled and aligned, however
+     * long a modded ID turns out to be.
+     */
+    private fun wrapWithPrefix(text: String, prefix: String, max: Int): List<String> {
+        if (text.length <= max) return listOf(prefix + text)
+
+        val lines = mutableListOf<String>()
+        val line = StringBuilder()
+        for (word in text.split(" ")) {
+            if (line.isNotEmpty() && line.length + 1 + word.length > max) {
+                lines.add(prefix + line)
+                line.setLength(0)
+            }
+            if (line.isNotEmpty()) line.append(' ')
+            line.append(word)
+        }
+        if (line.isNotEmpty()) lines.add(prefix + line)
+        return lines
+    }
+
     companion object {
         /** How many blocks to list before collapsing the rest into a count. */
         const val MAX_BLOCKS_SHOWN = 8
+
+        /** Character budget per tooltip line before wrapping it ourselves. */
+        const val MAX_LINE_CHARS = 38
     }
 }
 
@@ -256,9 +287,6 @@ object SpawnDataExtractor {
         return SpawnInfo(
             bucket = detail.bucket.toString(),
 
-            // spawnablePositionType is a lateinit var on SpawnDetail: reading it
-            // before the spawn file has been fully loaded throws rather than
-            // returning null, so it is guarded rather than null-checked.
             spawnablePosition = runCatching {
                 formatPositionType(detail.spawnablePositionType.name)
             }.getOrNull(),
@@ -362,12 +390,25 @@ object SpawnDataExtractor {
         readField(condition, "identifier")?.let { return formatId(it.toString()) }
 
         readField(condition, "tag")?.let { tag ->
-            readMethod(tag, "location")?.let { return "#${formatId(it.toString())}" }
-            return "#${formatId(tag.toString())}"
+            if (tag is TagKey<*>) return "#${formatId(tag.location().toString())}"
+            return "#${formatId(tagIdFromToString(tag.toString()))}"
         }
 
         return condition.toString()
     }
+
+    /**
+     * Last-resort extraction of a tag ID from a toString() form.
+     *
+     * Only reached if Cobblemon ever stops exposing a TagKey here. Turns
+     * "TagKey[minecraft:block / cobblemon:natural]" into "cobblemon:natural"
+     * so the tooltip never shows the raw bracket form.
+     */
+    private fun tagIdFromToString(raw: String): String =
+        TAG_TO_STRING.find(raw)?.groupValues?.get(1) ?: raw
+
+    /** Matches the ID inside "TagKey[minecraft:block / cobblemon:natural]". */
+    private val TAG_TO_STRING = Regex("""\[[^\]]*?/\s*([^\]\s]+)]""")
 
     private fun readField(obj: Any, name: String): Any? = try {
         generateSequence(obj::class.java) { it.superclass }
@@ -375,10 +416,6 @@ object SpawnDataExtractor {
                 runCatching { klass.getDeclaredField(name).apply { isAccessible = true }.get(obj) }.getOrNull()
             }
             .firstOrNull()
-    } catch (e: Exception) { null }
-
-    private fun readMethod(obj: Any, name: String): Any? = try {
-        obj::class.java.getMethod(name).invoke(obj)
     } catch (e: Exception) { null }
 
     /**
@@ -434,7 +471,6 @@ object SpawnDataExtractor {
             parts.add("${tr("light")}: ${condition.minLight ?: 0} - ${condition.maxLight ?: 15}")
         }
 
-        // Anything the explicit cases above did not cover.
         parts.addAll(describeRemainingFields(condition))
 
         return parts
@@ -480,8 +516,6 @@ object SpawnDataExtractor {
         val parts = mutableListOf<String>()
         val consumed = mutableSetOf<String>()
 
-        // Pair minFoo/maxFoo into one "Foo: a - b" line, the way the
-        // hand-written cases already present Y and light levels.
         values.keys.filter { it.startsWith("min") }.forEach { minKey ->
             val maxKey = "max" + minKey.removePrefix("min")
 
