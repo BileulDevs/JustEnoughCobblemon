@@ -15,7 +15,7 @@ loom {
     accessWidenerPath.set(file("../common/src/main/resources/justenoughcobblemon.accesswidener"))
 
     mixin {
-        defaultRefmapName.set("mixins.${project.name}.refmap.json")
+        defaultRefmapName.set("justenoughcobblemon.${project.name}.refmap.json")
     }
 }
 
