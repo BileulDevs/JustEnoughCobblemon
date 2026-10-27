@@ -51,7 +51,7 @@ Hover an item and press **R** to see which Pokémon drop it, or hover a Pokémon
 
 ## Installation
 
-1. Install Cobblemon 1.8.0 for Minecraft 1.21.1.
+1. Install Cobblemon 1.8.4 for Minecraft 1.21.1. Other Cobblemon versions are not supported.
 2. Install the Kotlin bridge for your loader — Fabric Language Kotlin on Fabric, Kotlin for Forge on NeoForge. Cobblemon needs it.
 3. Drop the Just Enough Cobblemon jar matching your loader into `mods/`.
 4. Optionally add JEI or EMI for the loot lookups.
@@ -61,7 +61,7 @@ Hover an item and press **R** to see which Pokémon drop it, or hover a Pokémon
 | | Required | Version |
 |---|---|---|
 | Minecraft | yes | 1.21.1 |
-| Cobblemon | yes | 1.8.0+ |
+| Cobblemon | yes | 1.8.4 exactly |
 | Fabric API + Fabric Language Kotlin | yes, on Fabric | — |
 | Kotlin for Forge | yes, on NeoForge | — |
 | JEI **or** EMI | optional | JEI 19.0+ |

@@ -2,29 +2,20 @@ package dev.darcosse.fabric.justenoughcobblemon;
 
 import dev.darcosse.common.justenoughcobblemon.JustEnoughCobblemonPluginCommon;
 import mezz.jei.api.JeiPlugin;
-import mezz.jei.api.registration.IRecipeRegistration;
 
 /**
- * Fabric-specific implementation of the JEI plugin.
- * Extends the common plugin logic to register Pokémon-related recipes and categories.
+ * Fabric entry point for JEI. It only exists to carry {@link JeiPlugin}, which JEI discovers per loader;
+ * every registration lives in {@link JustEnoughCobblemonPluginCommon} so both loaders stay identical.
  *
  * @author Darcosse
- * @version 1.0
+ * @version 1.1
  * @since 2026
  */
 @JeiPlugin
 public class JustEnoughCobblemonFabricPlugin extends JustEnoughCobblemonPluginCommon {
 
     /**
-     * Default constructor for the JEI plugin.
+     * Instantiated reflectively by JEI, which requires a public no-argument constructor.
      */
     public JustEnoughCobblemonFabricPlugin() {}
-
-    /**
-     * Registers recipes into JEI by calling the shared logic defined in the common module.
-     */
-    @Override
-    public void registerRecipes(IRecipeRegistration registration) {
-        super.registerRecipes(registration);
-    }
 }

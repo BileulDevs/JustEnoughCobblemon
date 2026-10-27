@@ -32,5 +32,6 @@
   "justenoughcobblemon.ui.spawn.multiplier_unless": "unless",
   "justenoughcobblemon.ui.spawn.multiplier_conditional": "under specific conditions",
   "justenoughcobblemon.ui.spawn.labels": "Labels",
-  "justenoughcobblemon.ui.spawn.and_more": "... and %s more"
+  "justenoughcobblemon.ui.spawn.and_more": "... and %s more",
+  "justenoughcobblemon.jei.category.pokemon_drops": "Cobblemon Drops"
 }

@@ -2,22 +2,20 @@ package dev.darcosse.forge.justenoughcobblemon;
 
 import dev.darcosse.common.justenoughcobblemon.JustEnoughCobblemonPluginCommon;
 import mezz.jei.api.JeiPlugin;
-import mezz.jei.api.registration.IRecipeRegistration;
-import mezz.jei.api.registration.IRecipeCategoryRegistration;
 
+/**
+ * NeoForge entry point for JEI. It only exists to carry {@link JeiPlugin}, which JEI discovers per loader;
+ * every registration lives in {@link JustEnoughCobblemonPluginCommon} so both loaders stay identical.
+ *
+ * @author Darcosse
+ * @version 1.1
+ * @since 2026
+ */
 @JeiPlugin
 public class JustEnoughCobblemonNeoForgePlugin extends JustEnoughCobblemonPluginCommon {
-    public JustEnoughCobblemonNeoForgePlugin() {
-        super();
-    }
 
-    @Override
-    public void registerCategories(IRecipeCategoryRegistration registration) {
-        super.registerCategories(registration);
-    }
-
-    @Override
-    public void registerRecipes(IRecipeRegistration registration) {
-        super.registerRecipes(registration);
-    }
+    /**
+     * Instantiated reflectively by JEI, which requires a public no-argument constructor.
+     */
+    public JustEnoughCobblemonNeoForgePlugin() {}
 }

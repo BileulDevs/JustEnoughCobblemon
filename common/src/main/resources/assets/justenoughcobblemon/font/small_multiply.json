@@ -1,0 +1,12 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "justenoughcobblemon:font/small_multiply.png",
+      "ascent": 7,
+      "chars": [
+        "\u00d7"
+      ]
+    }
+  ]
+}
