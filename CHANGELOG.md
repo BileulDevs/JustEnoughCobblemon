@@ -17,6 +17,7 @@ This release reworks the JEI loot integration: more accurate numbers, alternate 
 
 ### Changed
 
+- **Requires exactly Cobblemon 1.8.4.** Fabric and NeoForge now refuse to load the mod with any other Cobblemon version, instead of accepting 1.8.0 and later.
 - **Drop chances show your real odds of getting the item.** Cobblemon first decides whether a drop is picked, then rolls the quantity.
   A drop picked 100% of the time with a quantity of 0 to 2 only gives the item 2 times out of 3, so it now shows `67%` instead of `100%`.
 - Percentages are formatted cleanly: `100%`, `12.5%`, never `100.0%` or `33.333332%`.
