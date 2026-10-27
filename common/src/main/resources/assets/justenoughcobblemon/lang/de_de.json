@@ -32,5 +32,6 @@
   "justenoughcobblemon.ui.spawn.multiplier_unless": "außer wenn",
   "justenoughcobblemon.ui.spawn.multiplier_conditional": "unter bestimmten Bedingungen",
   "justenoughcobblemon.ui.spawn.labels": "Labels",
-  "justenoughcobblemon.ui.spawn.and_more": "... und %s weitere"
+  "justenoughcobblemon.ui.spawn.and_more": "... und %s weitere",
+  "justenoughcobblemon.jei.category.pokemon_drops": "Cobblemon-Beute"
 }

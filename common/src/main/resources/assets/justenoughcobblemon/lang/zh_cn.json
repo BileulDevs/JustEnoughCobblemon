@@ -32,5 +32,6 @@
   "justenoughcobblemon.ui.spawn.multiplier_unless": "除非",
   "justenoughcobblemon.ui.spawn.multiplier_conditional": "在特定条件下",
   "justenoughcobblemon.ui.spawn.labels": "标签",
-  "justenoughcobblemon.ui.spawn.and_more": "... 还有 %s 个"
+  "justenoughcobblemon.ui.spawn.and_more": "... 还有 %s 个",
+  "justenoughcobblemon.jei.category.pokemon_drops": "Cobblemon 掉落物"
 }

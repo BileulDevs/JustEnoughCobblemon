@@ -32,5 +32,6 @@
   "justenoughcobblemon.ui.spawn.multiplier_unless": "次の場合を除く",
   "justenoughcobblemon.ui.spawn.multiplier_conditional": "特定の条件下",
   "justenoughcobblemon.ui.spawn.labels": "ラベル",
-  "justenoughcobblemon.ui.spawn.and_more": "... 他 %s 件"
+  "justenoughcobblemon.ui.spawn.and_more": "... 他 %s 件",
+  "justenoughcobblemon.jei.category.pokemon_drops": "Cobblemonのドロップ"
 }

@@ -32,5 +32,6 @@
   "justenoughcobblemon.ui.spawn.multiplier_unless": "salvo si",
   "justenoughcobblemon.ui.spawn.multiplier_conditional": "en condiciones específicas",
   "justenoughcobblemon.ui.spawn.labels": "Etiquetas",
-  "justenoughcobblemon.ui.spawn.and_more": "... y %s más"
+  "justenoughcobblemon.ui.spawn.and_more": "... y %s más",
+  "justenoughcobblemon.jei.category.pokemon_drops": "Botín de Cobblemon"
 }

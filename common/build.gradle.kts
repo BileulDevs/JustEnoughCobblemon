@@ -17,8 +17,9 @@ dependencies {
     mappings(loom.officialMojangMappings())
     modImplementation("com.cobblemon:mod:${property("cobblemon_version")}") { isTransitive = false }
 
+    // Common code must only see the loader-neutral API; the Fabric API jar would let Fabric-only
+    // classes compile here and then fail at runtime on NeoForge.
     compileOnly("mezz.jei:jei-1.21.1-common-api:19.27.0.340")
-    compileOnly("mezz.jei:jei-1.21.1-fabric-api:19.27.0.340")
 
     compileOnly("org.spongepowered:mixin:0.8.5")
 
