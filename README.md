@@ -8,7 +8,6 @@ The Pokédex tab works on its own. JEI or EMI is only needed for the loot side.
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-green?logo=minecraft)](https://www.minecraft.net)
 [![Fabric](https://img.shields.io/badge/Fabric-supported-dbb37d?logo=fabric)](https://fabricmc.net)
 [![NeoForge](https://img.shields.io/badge/NeoForge-supported-e04e14)](https://neoforged.net)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
