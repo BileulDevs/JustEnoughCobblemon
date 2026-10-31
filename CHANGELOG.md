@@ -2,7 +2,7 @@
 
 All notable changes to Just Enough Cobblemon are listed here.
 
-## [1.5.0] - Unreleased
+## [1.5.0] - 2026-10-31
 
 This release adds Jade tooltips for Cobblemon's blocks and Pokémon, and a config file to choose what they show.
 
