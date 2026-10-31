@@ -26,6 +26,12 @@ allprojects {
         maven("https://thedarkcolour.github.io/KotlinForForge/")
         maven("https://maven.blamejared.com/")
         maven("https://maven.terraformersmc.com/releases/")
+        // Jade is only published to Modrinth and CurseForge. Restricting this repository to the
+        // "maven.modrinth" group keeps Gradle from querying Modrinth for every other dependency.
+        exclusiveContent {
+            forRepository { maven("https://api.modrinth.com/maven") }
+            filter { includeGroup("maven.modrinth") }
+        }
     }
 
     tasks {

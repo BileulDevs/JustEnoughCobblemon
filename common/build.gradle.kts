@@ -21,6 +21,12 @@ dependencies {
     // classes compile here and then fail at runtime on NeoForge.
     compileOnly("mezz.jei:jei-1.21.1-common-api:19.27.0.340")
 
+    // Jade is optional: compiled against, never bundled. Jade has no loader-neutral artifact, but
+    // its API package is identical on Fabric and NeoForge for 1.21.1, so common compiles against
+    // the Fabric jar (remapped by Loom, hence modCompileOnly). Only the compat.jade package may
+    // import it.
+    modCompileOnly("maven.modrinth:jade:${property("jade_version")}+fabric")
+
     compileOnly("org.spongepowered:mixin:0.8.5")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:${property("junit_version")}")

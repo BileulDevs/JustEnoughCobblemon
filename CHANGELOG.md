@@ -2,6 +2,46 @@
 
 All notable changes to Just Enough Cobblemon are listed here.
 
+## [1.5.0] - Unreleased
+
+This release adds Jade tooltips for Cobblemon's blocks and Pokémon, and a config file to choose what they show.
+
+### Added
+
+- **Jade integration** (optional). Looking at a Cobblemon block or Pokémon with Jade installed now shows:
+  - **Poké Snack:** bites left, bait effect rates, and the ingredients it was cooked with.
+  - **Disc Shelf:** the disc you point at, named after its move for TMs, with the move's type, category, power, accuracy and PP. Without a pointed disc, the number of stored discs. Icons of every stored disc.
+  - **Berry tree:** growth stage, mulch and its uses left, time until the next stage.
+  - **Pasture Block:** owner, Pokémon count out of the limit, and the pastured Pokémon with their level and a shiny marker.
+  - **Healing Machine:** charge bar, time until fully charged, time left on a heal in progress.
+  - **Fossil machine** (analyzer, restoration tank and monitor): fossil inside, the Pokémon it restores into, organic matter, restoration progress, and when the Pokémon is ready.
+  - **Cooking Pot:** the dish the current ingredients make, with seasoning applied, the cooking progress, and a reminder when the lid is off.
+  - **Tumblestones:** growth, and a warning when they cannot grow where they are.
+  - **Revival Herb:** the herb it mutated into, or whether Surprise Mulch can still make it mutate.
+  - **Display Case:** the exhibited item; a TM shows its move.
+  - **Pokémon:** EVs given when defeated.
+
+  Jade already shows Pokémon owners and the growth of apricorns, mints, leeks and berry trees, so those are not repeated.
+  Without Jade, nothing changes and nothing extra is loaded.
+- **Config files** in `config/justenoughcobblemon/`:
+  - `client.json`: every tooltip line can be shown `always`, only while sneaking (`sneak`), or `never`. The Poké Snack ingredients and the pasture list are `sneak` by default to keep tooltips short.
+  - `server.json`: lets server owners stop sending the data behind the berry, pasture, healing machine, fossil and cooking pot lines, and cap how many Pokémon a pasture tooltip names.
+
+  Edits apply within a second, without restarting. A file with a JSON error is never overwritten: the previous settings stay active and a warning is logged.
+
+### Changed
+
+- **JEI is now required on both loaders.** Fabric declared it optional; NeoForge already required it, by accident (see below). The game now refuses to start without JEI on either loader instead of starting without the drop pages.
+
+### Technical
+
+- NeoForge dependencies are declared with `type = "required"` / `"optional"`. NeoForge 21.1 silently ignores the older `mandatory` field and treats such a dependency as required, which is why JEI was already compulsory there and Jade briefly was too.
+- Jade is a compile-only dependency, fetched from the Modrinth Maven repository. The Fabric plugin is a `jade` entrypoint and the NeoForge plugin carries `@WailaPlugin`; all registration lives in the common plugin, like JEI's.
+- All Jade code sits in the `compat.jade` package, which nothing else references, so players without Jade never load it.
+- Every piece of data the server sends to Jade carries a format version. A client and a server on different versions hide the affected lines instead of showing wrong values.
+- Jade's own per-plugin switches are not used: every line is configured in `client.json` instead.
+- Jade is added to the development runtime (`modLocalRuntime`) so the integration can be tested from the IDE.
+
 ## [1.4.0] - 2026-10-27
 
 This release reworks the JEI loot integration: more accurate numbers, alternate forms, and a cleaner page.

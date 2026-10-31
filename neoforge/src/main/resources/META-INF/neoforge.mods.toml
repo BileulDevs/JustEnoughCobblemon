@@ -13,31 +13,43 @@ A Cobblemon Addon to see Pokemon drops and where they spawn
 '''
 #logoFile = ""
 
+# NeoForge 21.1 reads "type" ("required", "optional", "incompatible", "discouraged"). The older
+# Forge field "mandatory" is ignored without warning, and a dependency without "type" is required,
+# so "mandatory = false" used to make Jade compulsory by accident.
 [[dependencies.justenoughcobblemon]]
 modId = "minecraft"
-mandatory = true
+type = "required"
 versionRange = "[1.21.1]"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.justenoughcobblemon]]
 modId = "neoforge"
-mandatory = true
+type = "required"
 versionRange = "[21.1.182,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.justenoughcobblemon]]
 modId = "cobblemon"
-mandatory = true
+type = "required"
 versionRange = "[1.8.4+1.21.1]"
 ordering = "AFTER"
 side = "BOTH"
 
+# Required: the Pokémon drop pages are a JEI recipe category. Same rule as "depends" on Fabric.
 [[dependencies.justenoughcobblemon]]
 modId = "jei"
-mandatory = false
+type = "required"
 versionRange = "[19.0,)"
+ordering = "AFTER"
+side = "BOTH"
+
+# Optional: only enables the Jade tooltips. Jade 15 is the 1.21.1 line whose API this mod targets.
+[[dependencies.justenoughcobblemon]]
+modId = "jade"
+type = "optional"
+versionRange = "[15.0,)"
 ordering = "AFTER"
 side = "BOTH"
 

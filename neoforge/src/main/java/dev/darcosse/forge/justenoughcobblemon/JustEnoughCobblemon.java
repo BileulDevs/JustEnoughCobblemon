@@ -1,9 +1,12 @@
 package dev.darcosse.forge.justenoughcobblemon;
 
+import dev.darcosse.common.justenoughcobblemon.config.JecConfig;
 import dev.darcosse.forge.justenoughcobblemon.network.NeoForgeNetworkHandler;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
@@ -19,10 +22,13 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 public class JustEnoughCobblemon {
 
     /**
-     * Initializes the mod, registers the instance to the NeoForge event bus,
-     * and sets up the network communication system.
+     * Initializes the mod: loads its config files, registers the instance to the NeoForge event
+     * bus, and sets up the network communication system.
      */
     public JustEnoughCobblemon(IEventBus modEventBus) {
+        // First, so that anything initialised afterwards already reads the player's settings.
+        JecConfig.init(FMLPaths.CONFIGDIR.get(), FMLEnvironment.dist.isClient());
+
         NeoForge.EVENT_BUS.register(this);
 
         modEventBus.addListener(NeoForgeNetworkHandler.INSTANCE::register);

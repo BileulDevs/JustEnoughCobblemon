@@ -52,6 +52,11 @@ dependencies {
 
     annotationProcessor("mezz.jei:jei-1.21.1-fabric:19.27.0.340")
 
+    // Jade: optional. Compile-only so it is never required at runtime; added to the dev runtime
+    // only (modLocalRuntime is not published) so the integration can be tested from the IDE.
+    modCompileOnly("maven.modrinth:jade:${property("jade_version")}+fabric")
+    modLocalRuntime("maven.modrinth:jade:${property("jade_version")}+fabric")
+
     // Tests
     testImplementation("org.junit.jupiter:junit-jupiter-api:${property("junit_version")}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${property("junit_version")}")
