@@ -19,6 +19,9 @@
     ],
     "client": [
       "dev.darcosse.fabric.justenoughcobblemon.client.JustEnoughCobblemonClient"
+    ],
+    "jade": [
+      "dev.darcosse.fabric.justenoughcobblemon.compat.JustEnoughCobblemonFabricJadePlugin"
     ]
   },
   "mixins": [
@@ -26,10 +29,11 @@
   ],
   "depends": {
     "minecraft": "1.21.1",
-    "cobblemon": "1.8.4"
+    "cobblemon": "1.8.4",
+    "jei": ">=19.0.0"
   },
   "suggests": {
-    "jei": "*",
-    "emi": "*"
+    "emi": "*",
+    "jade": "*"
   }
 }
